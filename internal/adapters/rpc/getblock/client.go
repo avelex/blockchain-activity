@@ -2,6 +2,7 @@ package getblock
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -21,12 +22,20 @@ const (
 	getTransactionByHashMethod = "eth_getTransactionByHash"
 )
 
-type getblockClient struct {
-	rpcURL string
-	client *jsonrpc.Client
+var (
+	ErrInvalidResult = errors.New("invalid rpc result")
+)
+
+type JSONRPCClient interface {
+	Call(ctx context.Context, url string, request jsonrpc.Request) (jsonrpc.Response, error)
 }
 
-func New(c *jsonrpc.Client, token string) *getblockClient {
+type getblockClient struct {
+	rpcURL string
+	client JSONRPCClient
+}
+
+func New(c JSONRPCClient, token string) *getblockClient {
 	return &getblockClient{
 		rpcURL: fmt.Sprintf("%s/%s", getBlockBase, token),
 		client: c,
@@ -46,7 +55,11 @@ func (c *getblockClient) BlockNumber(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 
-	blocknumberHex := resp.Result.(string)
+	blocknumberHex, ok := resp.Result.(string)
+	if !ok {
+		return 0, ErrInvalidResult
+	}
+
 	block, err := strconv.ParseInt(blocknumberHex, 0, 64)
 	if err != nil {
 		return 0, err
@@ -63,7 +76,11 @@ func (c *getblockClient) ChainID(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 
-	chainHex := resp.Result.(string)
+	chainHex, ok := resp.Result.(string)
+	if !ok {
+		return 0, ErrInvalidResult
+	}
+
 	chain, err := strconv.ParseInt(chainHex, 0, 64)
 	if err != nil {
 		return 0, err
