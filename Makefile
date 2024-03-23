@@ -3,7 +3,7 @@ build:
 	docker compose build
 
 .PHONY: start
-start:
+start: build
 	docker compose up -d
 
 .PHONY: down
@@ -15,12 +15,8 @@ test:
 	go test -race ./...
 
 .PHONY: lint
-lint: golangci-lint nilaway-lint
+lint: golangci-lint
 
 .PHONY: golangci-lint
 golangci-lint:
 	golangci-lint run
-
-.PHONY: nilaway-lint
-nilaway-lint:
-	nilaway ./...

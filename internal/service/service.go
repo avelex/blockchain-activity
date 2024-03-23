@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"time"
 
 	"github.com/avelex/blockchain-activity/internal/types"
 	"github.com/avelex/blockchain-activity/internal/utils/erc20"
@@ -65,7 +66,7 @@ func (svc *blockchainService) getRangeBlocks(ctx context.Context, start, limit i
 
 	// TODO: move workers count to config
 	workers := make(chan int64, 50)
-	result := make(chan types.Block, 10)
+	result := make(chan types.Block)
 
 	for i := 0; i < cap(workers); i++ {
 		go func() {
@@ -75,7 +76,10 @@ func (svc *blockchainService) getRangeBlocks(ctx context.Context, start, limit i
 					continue
 				}
 
-				block, err := svc.provider.BlockByNumber(ctx, blockNumber)
+				ctxBlock, cancel := context.WithTimeout(ctx, 5*time.Second)
+
+				block, err := svc.provider.BlockByNumber(ctxBlock, blockNumber)
+				cancel()
 				if err == nil {
 					if err := svc.cache.PutBlock(ctx, block); err != nil {
 						slog.Warn(err.Error())

@@ -33,6 +33,11 @@ func New(c *jsonrpc.Client, token string) *getblockClient {
 	}
 }
 
+func (c *getblockClient) CheckAvailability(ctx context.Context) error {
+	_, err := c.BlockNumber(ctx)
+	return err
+}
+
 func (c *getblockClient) BlockNumber(ctx context.Context) (int64, error) {
 	req := jsonrpc.NewRequest(blockNumberMethod, []any{}, getBlockID)
 

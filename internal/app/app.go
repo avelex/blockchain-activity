@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -18,7 +19,15 @@ func Run(ctx context.Context, cfg config.Config) error {
 	jsonRPC := jsonrpc.New()
 	getblockClient := getblock.New(jsonRPC, cfg.RPC.AccessToken)
 
-	// TODO: add cache clean with LRU
+	ctxAvailable, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	if err := getblockClient.CheckAvailability(ctxAvailable); err != nil {
+		return fmt.Errorf("getblock rpc not available: %w", err)
+	}
+
+	// TODO: clean cache with LRU
+	// TODO: prepare and fill cache in background
 	blockRepo := inmemory.New()
 	blockchainService := service.New(blockRepo, getblockClient)
 
